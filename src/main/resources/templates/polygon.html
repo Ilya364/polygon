@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html xmlns="http://www.thymeleaf.org">
+<head>
+    <title>Draw Polygon</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-draw/dist/leaflet.draw.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-draw/dist/leaflet.draw.js"></script>
+</head>
+<body>
+    <div id="map" style="height: 500px;"></div>
+    <button onclick="sendPolygon()">Send Coordinates</button>
+
+    <script>
+        var map = L.map('map').setView([54.45, 37.37], 13);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 19,
+        }).addTo(map);
+
+        var drawnItems = new L.FeatureGroup();
+        map.addLayer(drawnItems);
+
+        var drawControl = new L.Control.Draw({
+          edit: {
+            featureGroup: drawnItems,
+          },
+          draw: {
+            polygon: true,
+            polyline: false,
+            rectangle: false,
+            circle: false,
+            marker: false,
+          },
+        });
+        map.addControl(drawControl);
+
+        map.on('draw:created', function (e) {
+          var layer = e.layer;
+          drawnItems.addLayer(layer);
+        });
+
+        function sendPolygon() {
+          var data = drawnItems.toGeoJSON();
+          var coordinates = data.features[0].geometry.coordinates[0].map(function(coord) {
+            return coord.join();
+          });
+          fetch('http://localhost:8080/polygon', {
+            mode: 'no-cors',
+            method: 'POST',
+            body: JSON.stringify({ coordinates }),
+            headers:{
+              'Content-Type': 'application/json'
+            }
+          });
+        }
+    </script>
+</body>
+</html>
